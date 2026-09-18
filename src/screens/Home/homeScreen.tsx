@@ -11,12 +11,14 @@ interface HomeScreenProps {
   username: string;
   onLogout: () => void;
   onOpenTeams: () => void;
+  onOpenEvents: () => void;
 }
 
 export default function HomeScreen({
   username,
   onLogout,
   onOpenTeams,
+  onOpenEvents,
 }: HomeScreenProps) {
   // controla se o menu lateral (Modal) está visível
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
@@ -33,9 +35,15 @@ export default function HomeScreen({
     onOpenTeams();
   }
 
+  // fecha o menu e navega para a tela de Eventos
+  function handleOpenEvents() {
+    setMenuOpen(false);
+    onOpenEvents();
+  }
+
   return (
     <View style={styles.container}>
-      {/* botão hambúrguer que abre o menu lateral */}
+      {/* botão hambúrguer: só ABRE o menu lateral, não navega sozinho */}
       <Pressable
         style={styles.menuButton}
         onPress={() => setMenuOpen(true)}
@@ -96,10 +104,10 @@ export default function HomeScreen({
               </Text>
             </Pressable>
 
-            {/* item Eventos: ainda sem navegação implementada */}
+            {/* item Eventos: navega para a tela de eventos */}
             <Pressable
               style={styles.menuItem}
-              onPress={() => setMenuOpen(false)}
+              onPress={handleOpenEvents}
             >
               <Text style={styles.menuItemText}>
                 Eventos

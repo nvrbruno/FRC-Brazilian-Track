@@ -26,7 +26,7 @@ import {
 } from "../../api/teamDetails";
 
 // Props recebidas pela tela: os dados básicos do time (+ avatar já resolvido)
-// e três callbacks de navegação/ação vindos do componente pai.
+// e callbacks de navegação/ação vindos do componente pai.
 interface TeamDetailsScreenProps {
   team: Team & {
     avatar: string | null;
@@ -34,6 +34,7 @@ interface TeamDetailsScreenProps {
   onBack: () => void;
   onLogout: () => void;
   onOpenHome: () => void;
+  onOpenEvents: () => void; // navega para a tela de Eventos
 }
 
 // Estende TeamEvent para já carregar, junto do evento, os prêmios,
@@ -49,6 +50,7 @@ export default function TeamDetailsScreen({
   onBack,
   onLogout,
   onOpenHome,
+  onOpenEvents,
 }: TeamDetailsScreenProps) {
   // Lista de eventos já enriquecida com prêmios/partidas/pontuações
   const [events, setEvents] = useState<EventWithData[]>([]);
@@ -136,6 +138,12 @@ export default function TeamDetailsScreen({
     onBack();
   }
 
+  // Fecha o menu e navega para a tela de Eventos
+  function handleOpenEvents() {
+    setMenuOpen(false);
+    onOpenEvents();
+  }
+
   // Fecha o menu e executa logout (assíncrono)
   async function handleLogout() {
     setMenuOpen(false);
@@ -153,7 +161,7 @@ export default function TeamDetailsScreen({
           </Pressable>
 
           <Text style={styles.headerTitle} numberOfLines={1}>
-            #{team.teamNumber} · {team.nameShort || team.nameFull}
+            {team.nameShort || team.nameFull}
           </Text>
         </View>
 
@@ -176,6 +184,7 @@ export default function TeamDetailsScreen({
             onClose={() => setMenuOpen(false)}
             onHome={handleOpenHome}
             onTeams={handleOpenTeams}
+            onEvents={handleOpenEvents}
             onLogout={handleLogout}
           />
         </Modal>
@@ -193,7 +202,7 @@ export default function TeamDetailsScreen({
           </Pressable>
 
           <Text style={styles.headerTitle} numberOfLines={1}>
-            #{team.teamNumber} · {team.nameShort || team.nameFull}
+            {team.nameShort || team.nameFull}
           </Text>
         </View>
 
@@ -213,6 +222,7 @@ export default function TeamDetailsScreen({
             onClose={() => setMenuOpen(false)}
             onHome={handleOpenHome}
             onTeams={handleOpenTeams}
+            onEvents={handleOpenEvents}
             onLogout={handleLogout}
           />
         </Modal>
@@ -401,7 +411,7 @@ export default function TeamDetailsScreen({
         </Pressable>
 
         <Text style={styles.headerTitle} numberOfLines={1}>
-          #{team.teamNumber} - {team.nameShort}
+          {team.nameShort || team.nameFull}
         </Text>
       </View>
 
@@ -416,6 +426,7 @@ export default function TeamDetailsScreen({
           onClose={() => setMenuOpen(false)}
           onHome={handleOpenHome}
           onTeams={handleOpenTeams}
+          onEvents={handleOpenEvents}
           onLogout={handleLogout}
         />
       </Modal>
@@ -428,12 +439,13 @@ interface MenuProps {
   onClose: () => void;
   onHome: () => void;
   onTeams: () => void;
+  onEvents: () => void;
   onLogout: () => void;
 }
 
 // Componente do menu lateral (sidebar) exibido dentro do Modal.
 // Composto por: sidebar (conteúdo) + overlay (área escura clicável para fechar).
-function Menu({ onClose, onHome, onTeams, onLogout }: MenuProps) {
+function Menu({ onClose, onHome, onTeams, onEvents, onLogout }: MenuProps) {
   return (
     <View style={styles.modalContainer}>
       <View style={styles.sidebar}>
@@ -454,8 +466,8 @@ function Menu({ onClose, onHome, onTeams, onLogout }: MenuProps) {
           <Text style={styles.menuItemText}>Times</Text>
         </Pressable>
 
-        {/* OBS: "Eventos" apenas fecha o menu, não navega para lugar nenhum ainda */}
-        <Pressable style={styles.menuItem} onPress={onClose}>
+        {/* navega de verdade para a tela de Eventos */}
+        <Pressable style={styles.menuItem} onPress={onEvents}>
           <Text style={styles.menuItemText}>Eventos</Text>
         </Pressable>
 

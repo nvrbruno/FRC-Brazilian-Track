@@ -4,9 +4,10 @@ import LoginScreen from "./src/screens/loginScreen";
 import HomeScreen from "./src/screens/Home/homeScreen";
 import TeamsScreen, { TeamWithAvatar } from "./src/screens/Teams/TeamsScreen";
 import TeamDetailsScreen from "./src/screens/Teams/TeamDetailsScreen";
+import EventsScreen from "./src/screens/Event/EventScreen";
 import { isAuthenticated, getStoredUsername, logout } from "./src/api/auth";
 
-type Screen = "home" | "teams" | "teamDetails";
+type Screen = "home" | "teams" | "teamDetails" | "events";
 
 export default function App() {
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
@@ -61,6 +62,7 @@ export default function App() {
         onBack={() => setScreen("teams")}
         onLogout={handleLogout}
         onOpenHome={() => setScreen("home")}
+        onOpenEvents={() => setScreen("events")}
       />
     );
   }
@@ -74,6 +76,17 @@ export default function App() {
           setSelectedTeam(team);
           setScreen("teamDetails");
         }}
+        onOpenEvents={() => setScreen("events")}
+      />
+    );
+  }
+
+  if (screen === "events") {
+    return (
+      <EventsScreen
+        onBack={() => setScreen("home")}
+        onOpenTeams={() => setScreen("teams")}
+        onLogout={handleLogout}
       />
     );
   }
@@ -83,6 +96,7 @@ export default function App() {
       username={username}
       onLogout={handleLogout}
       onOpenTeams={() => setScreen("teams")}
+      onOpenEvents={() => setScreen("events")}
     />
   );
 }

@@ -22,12 +22,14 @@ interface TeamsScreenProps {
   onBack: () => void;
   onLogout: () => void;
   onOpenTeam: (team: TeamWithAvatar) => void; // navega para os detalhes da equipe clicada
+  onOpenEvents: () => void; // navega para a tela de Eventos
 }
 
 export default function TeamsScreen({
   onBack,
   onLogout,
   onOpenTeam,
+  onOpenEvents,
 }: TeamsScreenProps) {
   const [teams, setTeams] = useState<TeamWithAvatar[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -70,6 +72,12 @@ export default function TeamsScreen({
     onBack();
   }
 
+  // fecha o menu e navega para a tela de Eventos
+  function handleOpenEvents() {
+    setMenuOpen(false);
+    onOpenEvents();
+  }
+
   // fecha o menu e dispara o logout
   async function handleLogout() {
     setMenuOpen(false);
@@ -110,6 +118,7 @@ export default function TeamsScreen({
           <Menu
             onClose={() => setMenuOpen(false)}
             onHome={handleOpenHome}
+            onEvents={handleOpenEvents}
             onLogout={handleLogout}
           />
         </Modal>
@@ -148,6 +157,7 @@ export default function TeamsScreen({
           <Menu
             onClose={() => setMenuOpen(false)}
             onHome={handleOpenHome}
+            onEvents={handleOpenEvents}
             onLogout={handleLogout}
           />
         </Modal>
@@ -243,6 +253,7 @@ export default function TeamsScreen({
         <Menu
           onClose={() => setMenuOpen(false)}
           onHome={handleOpenHome}
+          onEvents={handleOpenEvents}
           onLogout={handleLogout}
         />
       </Modal>
@@ -253,11 +264,12 @@ export default function TeamsScreen({
 interface MenuProps {
   onClose: () => void;
   onHome: () => void;
+  onEvents: () => void;
   onLogout: () => void;
 }
 
 // menu lateral reutilizado nos estados de loading/erro/sucesso
-function Menu({ onClose, onHome, onLogout }: MenuProps) {
+function Menu({ onClose, onHome, onEvents, onLogout }: MenuProps) {
   return (
     <View style={styles.modalContainer}>
       <View style={styles.sidebar}>
@@ -272,11 +284,13 @@ function Menu({ onClose, onHome, onLogout }: MenuProps) {
           <Text style={styles.menuItemText}>Home</Text>
         </Pressable>
 
+        {/* já estamos em Times: apenas fecha o menu */}
         <Pressable style={styles.menuItem} onPress={onClose}>
           <Text style={styles.menuItemText}>Times</Text>
         </Pressable>
 
-        <Pressable style={styles.menuItem} onPress={onClose}>
+        {/* navega de verdade para a tela de Eventos */}
+        <Pressable style={styles.menuItem} onPress={onEvents}>
           <Text style={styles.menuItemText}>Eventos</Text>
         </Pressable>
 
