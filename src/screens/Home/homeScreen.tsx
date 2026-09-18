@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-
 import {
   View,
   Text,
@@ -11,23 +10,32 @@ import {
 interface HomeScreenProps {
   username: string;
   onLogout: () => void;
+  onOpenTeams: () => void;
 }
 
 export default function HomeScreen({
   username,
   onLogout,
+  onOpenTeams,
 }: HomeScreenProps) {
+  // controla se o menu lateral (Modal) está visível
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
 
+  // fecha o menu e dispara o logout recebido via props
   function handleLogout() {
     setMenuOpen(false);
     onLogout();
   }
 
+  // fecha o menu e navega para a tela de Times
+  function handleOpenTeams() {
+    setMenuOpen(false);
+    onOpenTeams();
+  }
+
   return (
     <View style={styles.container}>
-
-      {/* Botão das 3 barrinhas */}
+      {/* botão hambúrguer que abre o menu lateral */}
       <Pressable
         style={styles.menuButton}
         onPress={() => setMenuOpen(true)}
@@ -35,7 +43,7 @@ export default function HomeScreen({
         <Text style={styles.menuIcon}>☰</Text>
       </Pressable>
 
-      {/* Conteúdo da Home */}
+      {/* mensagem de boas-vindas com o nome do usuário logado */}
       <View style={styles.content}>
         <Text style={styles.title}>
           Seja bem-vindo!
@@ -46,7 +54,7 @@ export default function HomeScreen({
         </Text>
       </View>
 
-      {/* Barra lateral */}
+      {/* menu lateral (drawer) em modal deslizante */}
       <Modal
         visible={menuOpen}
         transparent
@@ -54,9 +62,7 @@ export default function HomeScreen({
         onRequestClose={() => setMenuOpen(false)}
       >
         <View style={styles.modalContainer}>
-
           <View style={styles.sidebar}>
-
             <Pressable
               onPress={() => setMenuOpen(false)}
               style={styles.closeButton}
@@ -70,6 +76,7 @@ export default function HomeScreen({
 
             <View style={styles.divider} />
 
+            {/* item Home: já está na Home, só fecha o menu */}
             <Pressable
               style={styles.menuItem}
               onPress={() => setMenuOpen(false)}
@@ -79,15 +86,17 @@ export default function HomeScreen({
               </Text>
             </Pressable>
 
+            {/* item Times: navega para a tela de equipes */}
             <Pressable
               style={styles.menuItem}
-              onPress={() => setMenuOpen(false)}
+              onPress={handleOpenTeams}
             >
               <Text style={styles.menuItemText}>
                 Times
               </Text>
             </Pressable>
 
+            {/* item Eventos: ainda sem navegação implementada */}
             <Pressable
               style={styles.menuItem}
               onPress={() => setMenuOpen(false)}
@@ -97,7 +106,6 @@ export default function HomeScreen({
               </Text>
             </Pressable>
 
-            {/* Botão Sair */}
             <Pressable
               style={styles.logoutButton}
               onPress={handleLogout}
@@ -106,18 +114,15 @@ export default function HomeScreen({
                 Sair
               </Text>
             </Pressable>
-
           </View>
 
-          {/* Área fora da barra lateral */}
+          {/* área escura clicável fora do sidebar, fecha o menu */}
           <Pressable
             style={styles.overlay}
             onPress={() => setMenuOpen(false)}
           />
-
         </View>
       </Modal>
-
     </View>
   );
 }
