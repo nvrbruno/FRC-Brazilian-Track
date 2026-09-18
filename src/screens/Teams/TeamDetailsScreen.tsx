@@ -25,15 +25,19 @@ import {
   TeamScore,
 } from "../../api/teamDetails";
 
+// Props recebidas pela tela: os dados básicos do time (+ avatar já resolvido)
+// e três callbacks de navegação/ação vindos do componente pai.
 interface TeamDetailsScreenProps {
   team: Team & {
     avatar: string | null;
   };
   onBack: () => void;
   onLogout: () => void;
+  onOpenHome: () => void;
 }
 
-// evento com seus prêmios, partidas e pontuações já agregados
+// Estende TeamEvent para já carregar, junto do evento, os prêmios,
+// partidas e pontuações relacionados a ele (dados "achatados" em um só objeto).
 interface EventWithData extends TeamEvent {
   awards: TeamAward[];
   matches: TeamMatch[];
@@ -44,21 +48,26 @@ export default function TeamDetailsScreen({
   team,
   onBack,
   onLogout,
+  onOpenHome,
 }: TeamDetailsScreenProps) {
+  // Lista de eventos já enriquecida com prêmios/partidas/pontuações
   const [events, setEvents] = useState<EventWithData[]>([]);
+  // Prêmios gerais da equipe (não vinculados a um evento específico na tela)
   const [awards, setAwards] = useState<TeamAward[]>([]);
+  // Controla exibição do spinner de carregamento
   const [loading, setLoading] = useState<boolean>(true);
+  // Controla se o menu lateral (Modal) está aberto
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
+  // Mensagem de erro amigável exibida ao usuário
   const [error, setError] = useState<string>("");
 
-  // carrega eventos, prêmios, partidas e pontuações da equipe ao montar/trocar de equipe
   useEffect(() => {
     async function carregarDetalhes() {
       try {
         setLoading(true);
         setError("");
 
-        // busca eventos e prêmios gerais da equipe em paralelo
+        // Busca eventos e prêmios da equipe em paralelo (independentes entre si)
         const [eventosEquipe, premiosEquipe] = await Promise.all([
           getEventosEquipe(team.teamNumber),
           getPremiosEquipe(team.teamNumber),
@@ -66,7 +75,8 @@ export default function TeamDetailsScreen({
 
         setAwards(premiosEquipe);
 
-        // para cada evento, busca prêmios do evento e partidas em paralelo
+        // Para cada evento, busca em paralelo os prêmios e partidas da equipe
+        // NAQUELE evento específico (map + Promise.all = paralelismo entre eventos)
         const eventosComDados = await Promise.all(
           eventosEquipe.map(async (event) => {
             const [premiosEvento, partidas] = await Promise.all([
@@ -74,7 +84,8 @@ export default function TeamDetailsScreen({
               getPartidasEquipe(event.code, team.teamNumber),
             ]);
 
-            // descobre quais níveis de torneio (quali, playoff etc.) a equipe jogou
+            // Extrai os "níveis" de disputa (ex: qualificação, playoff) presentes
+            // nas partidas da equipe, sem duplicados (Set) e sem valores vazios
             const levels = Array.from(
               new Set(
                 partidas
@@ -83,11 +94,12 @@ export default function TeamDetailsScreen({
               ),
             );
 
-            // busca as pontuações de cada nível encontrado e junta tudo numa lista só
+            // Busca as pontuações do evento para cada nível encontrado, em paralelo
             const scoreLists = await Promise.all(
               levels.map((level) => getPontuacoesEvento(event.code, level)),
             );
 
+            // Achata a lista de listas de pontuações em uma única lista
             const scores = scoreLists.flat();
 
             return {
@@ -101,6 +113,7 @@ export default function TeamDetailsScreen({
 
         setEvents(eventosComDados);
       } catch {
+        // OBS: erro real não é logado aqui, só mostra mensagem genérica ao usuário
         setError("Não foi possível carregar os detalhes da equipe.");
       } finally {
         setLoading(false);
@@ -108,49 +121,116 @@ export default function TeamDetailsScreen({
     }
 
     carregarDetalhes();
+    // Reexecuta sempre que o número do time mudar
   }, [team.teamNumber]);
 
-  // fecha o menu e dispara o logout
+  // Fecha o menu e navega para a Home
+  function handleOpenHome() {
+    setMenuOpen(false);
+    onOpenHome();
+  }
+
+  // Fecha o menu e volta para a lista de times
+  function handleOpenTeams() {
+    setMenuOpen(false);
+    onBack();
+  }
+
+  // Fecha o menu e executa logout (assíncrono)
   async function handleLogout() {
     setMenuOpen(false);
     await onLogout();
   }
 
-  // estado de carregamento
+  // ----- ESTADO: CARREGANDO -----
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" />
+      <View style={styles.container}>
+        {/* Header fixo: sanduíche + título lado a lado, travado no topo */}
+        <View style={styles.fixedHeader}>
+          <Pressable style={styles.menuButton} onPress={() => setMenuOpen(true)}>
+            <Text style={styles.menuIcon}>☰</Text>
+          </Pressable>
 
-        <Text style={styles.loadingText}>Carregando detalhes da equipe...</Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            #{team.teamNumber} · {team.nameShort || team.nameFull}
+          </Text>
+        </View>
+
+        <View style={styles.center}>
+          <ActivityIndicator size="large" />
+
+          <Text style={styles.loadingText}>
+            Carregando detalhes da equipe...
+          </Text>
+        </View>
+
+        {/* Menu lateral também disponível durante o loading */}
+        <Modal
+          visible={menuOpen}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setMenuOpen(false)}
+        >
+          <Menu
+            onClose={() => setMenuOpen(false)}
+            onHome={handleOpenHome}
+            onTeams={handleOpenTeams}
+            onLogout={handleLogout}
+          />
+        </Modal>
       </View>
     );
   }
 
-  // estado de erro
+  // ----- ESTADO: ERRO -----
   if (error) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.error}>{error}</Text>
+      <View style={styles.container}>
+        <View style={styles.fixedHeader}>
+          <Pressable style={styles.menuButton} onPress={() => setMenuOpen(true)}>
+            <Text style={styles.menuIcon}>☰</Text>
+          </Pressable>
 
-        <Button title="Voltar" onPress={onBack} />
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            #{team.teamNumber} · {team.nameShort || team.nameFull}
+          </Text>
+        </View>
+
+        <View style={styles.center}>
+          <Text style={styles.error}>{error}</Text>
+
+          <Button title="Voltar" onPress={onBack} />
+        </View>
+
+        <Modal
+          visible={menuOpen}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setMenuOpen(false)}
+        >
+          <Menu
+            onClose={() => setMenuOpen(false)}
+            onHome={handleOpenHome}
+            onTeams={handleOpenTeams}
+            onLogout={handleLogout}
+          />
+        </Modal>
       </View>
     );
   }
 
+  // ----- ESTADO: SUCESSO (conteúdo principal) -----
   return (
     <View style={styles.container}>
-      <Pressable style={styles.menuButton} onPress={() => setMenuOpen(true)}>
-        <Text style={styles.menuIcon}>☰</Text>
-      </Pressable>
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
+        {/* Pequeno espaçador antes do card do time */}
         <View style={styles.headerSpace} />
 
-        {/* card com os dados cadastrais da equipe */}
+        {/* Card com informações gerais do time */}
         <View style={styles.teamCard}>
           <View style={styles.teamTop}>
             <View style={styles.teamText}>
@@ -161,6 +241,7 @@ export default function TeamDetailsScreen({
               </Text>
             </View>
 
+            {/* Mostra avatar/logo se existir, senão mostra placeholder com o número */}
             {team.avatar ? (
               <Image
                 source={{
@@ -180,7 +261,7 @@ export default function TeamDetailsScreen({
 
           <View style={styles.divider} />
 
-          {/* linhas de info só aparecem se o campo tiver valor (ver componente Info) */}
+          {/* Cada Info só renderiza se o valor existir (ver componente Info abaixo) */}
           <Info label="Nome completo" value={team.nameFull} />
 
           <Info label="Escola" value={team.schoolName} />
@@ -201,13 +282,14 @@ export default function TeamDetailsScreen({
           <Info label="Site" value={team.website} />
         </View>
 
-        {/* lista de prêmios gerais da equipe na temporada */}
+        {/* Seção: prêmios gerais da equipe (fora do contexto de evento) */}
         <Text style={styles.sectionTitle}>Prêmios</Text>
 
         {awards.length === 0 ? (
           <Text style={styles.empty}>Nenhum prêmio encontrado.</Text>
         ) : (
           awards.map((award, index) => (
+            // key combina id + index para evitar colisão caso haja ids repetidos
             <View key={`${award.awardId}-${index}`} style={styles.awardCard}>
               <Text style={styles.awardName}>{award.name}</Text>
 
@@ -216,7 +298,7 @@ export default function TeamDetailsScreen({
           ))
         )}
 
-        {/* lista de eventos, cada um com seus prêmios, partidas e pontuações */}
+        {/* Seção: lista de eventos, cada um com suas sub-seções */}
         <Text style={styles.sectionTitle}>Eventos</Text>
 
         {events.length === 0 ? (
@@ -235,7 +317,7 @@ export default function TeamDetailsScreen({
 
               <Text style={styles.eventInfo}>Tipo: {event.type}</Text>
 
-              {/* prêmios ganhos especificamente neste evento */}
+              {/* Sub-seção: prêmios ganhos NESTE evento */}
               <Text style={styles.subTitle}>Prêmios no evento</Text>
 
               {event.awards.length === 0 ? (
@@ -251,7 +333,7 @@ export default function TeamDetailsScreen({
                 ))
               )}
 
-              {/* partidas disputadas neste evento */}
+              {/* Sub-seção: partidas jogadas pela equipe neste evento */}
               <Text style={styles.subTitle}>Partidas</Text>
 
               {event.matches.length === 0 ? (
@@ -259,12 +341,13 @@ export default function TeamDetailsScreen({
               ) : (
                 event.matches.map((match, index) => (
                   <View key={`${event.code}-${index}`} style={styles.matchCard}>
-                    {/* nome do nível/número da partida, com fallback entre campos alternativos da API */}
+                    {/* Nome/nível da partida com fallback caso os campos venham com nomes diferentes da API */}
                     <Text style={styles.matchTitle}>
                       {match.level ?? match.tournamentLevel ?? "Partida"}{" "}
                       {match.match ?? match.matchNumber ?? ""}
                     </Text>
 
+                    {/* Campos opcionais: só renderiza se existirem */}
                     {match.description ? (
                       <Text style={styles.matchInfo}>{match.description}</Text>
                     ) : null}
@@ -290,7 +373,8 @@ export default function TeamDetailsScreen({
                 ))
               )}
 
-              {/* dados de pontuação detalhados, só mostra a contagem (estrutura livre) */}
+              {/* Sub-seção: apenas mostra a QUANTIDADE de registros de pontuação,
+                  não o detalhe de cada um (poderia ser expandido futuramente) */}
               <Text style={styles.subTitle}>Dados de pontuação</Text>
 
               {event.scores.length === 0 ? (
@@ -304,59 +388,90 @@ export default function TeamDetailsScreen({
           ))
         )}
 
+        {/* Botão de voltar ao final da lista, dentro do ScrollView */}
         <View style={styles.backButton}>
           <Button title="Voltar" onPress={onBack} />
         </View>
       </ScrollView>
 
-      {/* menu lateral (drawer) */}
+      {/* HEADER FIXO, FORA DO SCROLLVIEW: sanduíche + título travados no topo */}
+      <View style={styles.fixedHeader}>
+        <Pressable style={styles.menuButton} onPress={() => setMenuOpen(true)}>
+          <Text style={styles.menuIcon}>☰</Text>
+        </Pressable>
+
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          #{team.teamNumber} - {team.nameShort}
+        </Text>
+      </View>
+
+      {/* BARRA LATERAL FIXA (menu em Modal, abre por cima de tudo) */}
       <Modal
         visible={menuOpen}
         transparent
         animationType="slide"
         onRequestClose={() => setMenuOpen(false)}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.sidebar}>
-            <Pressable
-              onPress={() => setMenuOpen(false)}
-              style={styles.closeButton}
-            >
-              <Text style={styles.closeText}>✕</Text>
-            </Pressable>
-
-            <Text style={styles.sidebarTitle}>FRC Brazilian Track</Text>
-
-            <View style={styles.divider} />
-
-            {/* item Times: volta para a listagem de equipes */}
-            <Pressable style={styles.menuItem} onPress={onBack}>
-              <Text style={styles.menuItemText}>Times</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.menuItem}
-              onPress={() => setMenuOpen(false)}
-            >
-              <Text style={styles.menuItemText}>Eventos</Text>
-            </Pressable>
-
-            <Pressable style={styles.logoutButton} onPress={handleLogout}>
-              <Text style={styles.logoutText}>Sair</Text>
-            </Pressable>
-          </View>
-
-          <Pressable
-            style={styles.overlay}
-            onPress={() => setMenuOpen(false)}
-          />
-        </View>
+        <Menu
+          onClose={() => setMenuOpen(false)}
+          onHome={handleOpenHome}
+          onTeams={handleOpenTeams}
+          onLogout={handleLogout}
+        />
       </Modal>
     </View>
   );
 }
 
-// linha de rótulo + valor; não renderiza nada se o valor for vazio/nulo
+// Props do menu lateral: fechar e navegar para cada destino
+interface MenuProps {
+  onClose: () => void;
+  onHome: () => void;
+  onTeams: () => void;
+  onLogout: () => void;
+}
+
+// Componente do menu lateral (sidebar) exibido dentro do Modal.
+// Composto por: sidebar (conteúdo) + overlay (área escura clicável para fechar).
+function Menu({ onClose, onHome, onTeams, onLogout }: MenuProps) {
+  return (
+    <View style={styles.modalContainer}>
+      <View style={styles.sidebar}>
+        {/* Botão de fechar o menu */}
+        <Pressable onPress={onClose} style={styles.closeButton}>
+          <Text style={styles.closeText}>✕</Text>
+        </Pressable>
+
+        <Text style={styles.sidebarTitle}>FRC Brazilian Track</Text>
+
+        <View style={styles.divider} />
+
+        <Pressable style={styles.menuItem} onPress={onHome}>
+          <Text style={styles.menuItemText}>Home</Text>
+        </Pressable>
+
+        <Pressable style={styles.menuItem} onPress={onTeams}>
+          <Text style={styles.menuItemText}>Times</Text>
+        </Pressable>
+
+        {/* OBS: "Eventos" apenas fecha o menu, não navega para lugar nenhum ainda */}
+        <Pressable style={styles.menuItem} onPress={onClose}>
+          <Text style={styles.menuItemText}>Eventos</Text>
+        </Pressable>
+
+        <Pressable style={styles.logoutButton} onPress={onLogout}>
+          <Text style={styles.logoutText}>Sair</Text>
+        </Pressable>
+      </View>
+
+      {/* Área escura fora da sidebar; clicar nela também fecha o menu */}
+      <Pressable style={styles.overlay} onPress={onClose} />
+    </View>
+  );
+}
+
+// Componente auxiliar: renderiza "Label: valor" e não renderiza nada
+// se o valor for vazio/nulo/undefined (evita linhas em branco no card)
 function Info({ label, value }: { label: string; value?: string | null }) {
   if (!value) {
     return null;
@@ -384,7 +499,7 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     padding: 20,
-    paddingTop: 80,
+    paddingTop: 90, // espaço extra no topo para não ficar embaixo do header fixo (sanduíche + título)
     paddingBottom: 30,
   },
 
@@ -392,17 +507,37 @@ const styles = StyleSheet.create({
     height: 5,
   },
 
-  menuButton: {
+  // Header travado no topo (sanduíche + título), sempre visível por cima do conteúdo
+  fixedHeader: {
     position: "absolute",
-    top: 35,
-    left: 20,
-    zIndex: 10,
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingTop: 35,
+    paddingBottom: 15,
+    paddingHorizontal: 20,
+    backgroundColor: "#fff",
+    zIndex: 100, // garante que fique acima do conteúdo do ScrollView
+    elevation: 10, // equivalente ao zIndex no Android
+  },
+
+  menuButton: {
     padding: 8,
+    marginRight: 8,
   },
 
   menuIcon: {
     fontSize: 32,
     color: "#000",
+  },
+
+  headerTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#111",
   },
 
   teamCard: {
@@ -569,6 +704,7 @@ const styles = StyleSheet.create({
 
   sidebar: {
     width: 280,
+    height: "100%",
     backgroundColor: "#fff",
     padding: 24,
     paddingTop: 55,

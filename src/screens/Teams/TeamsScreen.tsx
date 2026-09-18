@@ -80,9 +80,19 @@ export default function TeamsScreen({
   if (loading) {
     return (
       <View style={styles.container}>
-        <Pressable style={styles.menuButton} onPress={() => setMenuOpen(true)}>
-          <Text style={styles.menuIcon}>☰</Text>
-        </Pressable>
+        {/* Header fixo: sanduíche + título lado a lado, travado no topo */}
+        <View style={styles.fixedHeader}>
+          <Pressable
+            style={styles.menuButton}
+            onPress={() => setMenuOpen(true)}
+          >
+            <Text style={styles.menuIcon}>☰</Text>
+          </Pressable>
+
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            Equipes FRC do Brasil
+          </Text>
+        </View>
 
         <View style={styles.center}>
           <ActivityIndicator size="large" />
@@ -111,9 +121,18 @@ export default function TeamsScreen({
   if (error) {
     return (
       <View style={styles.container}>
-        <Pressable style={styles.menuButton} onPress={() => setMenuOpen(true)}>
-          <Text style={styles.menuIcon}>☰</Text>
-        </Pressable>
+        <View style={styles.fixedHeader}>
+          <Pressable
+            style={styles.menuButton}
+            onPress={() => setMenuOpen(true)}
+          >
+            <Text style={styles.menuIcon}>☰</Text>
+          </Pressable>
+
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            Equipes FRC do Brasil
+          </Text>
+        </View>
 
         <View style={styles.center}>
           <Text style={styles.error}>{error}</Text>
@@ -139,14 +158,19 @@ export default function TeamsScreen({
   // lista de equipes carregada com sucesso
   return (
     <View style={styles.container}>
-      <Pressable style={styles.menuButton} onPress={() => setMenuOpen(true)}>
-        <Text style={styles.menuIcon}>☰</Text>
-      </Pressable>
+      {/* Header fixo: sanduíche + título lado a lado, travado no topo */}
+      <View style={styles.fixedHeader}>
+        <Pressable style={styles.menuButton} onPress={() => setMenuOpen(true)}>
+          <Text style={styles.menuIcon}>☰</Text>
+        </Pressable>
 
-      <View style={styles.header}>
-        <Text style={styles.title}>Equipes FRC do Brasil</Text>
-        <Text style={styles.count}>{teams.length} equipes encontradas</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          Equipes FRC do Brasil
+        </Text>
       </View>
+
+      {/* Contador de equipes, fora do header fixo, rola junto com a lista */}
+      <Text style={styles.count}>{teams.length} equipes encontradas</Text>
 
       <FlatList
         data={teams}
@@ -271,7 +295,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
     paddingHorizontal: 20,
-    paddingTop: 85,
+    paddingTop: 90, // espaço extra no topo para não ficar embaixo do header fixo (sanduíche + título)
   },
   center: {
     flex: 1,
@@ -280,17 +304,33 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "#fff",
   },
-  menuButton: {
+  // Header travado no topo (sanduíche + título), sempre visível por cima do conteúdo
+  fixedHeader: {
     position: "absolute",
-    top: 35,
-    left: 20,
-    zIndex: 10,
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingTop: 35,
+    paddingBottom: 15,
+    paddingHorizontal: 20,
+    backgroundColor: "#fff",
+    zIndex: 100,
+    elevation: 10,
+  },
+  menuButton: {
     padding: 8,
+    marginRight: 8,
   },
   menuIcon: { fontSize: 32, color: "#000" },
-  header: { marginBottom: 15 },
-  title: { fontSize: 24, fontWeight: "bold", color: "#111", marginBottom: 5 },
-  count: { fontSize: 15, color: "#666" },
+  headerTitle: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#111",
+  },
+  count: { fontSize: 15, color: "#666", marginBottom: 10 },
   loadingText: { marginTop: 10, fontSize: 16 },
   error: { color: "red", fontSize: 16, textAlign: "center", marginBottom: 15 },
   list: { paddingBottom: 10 },
