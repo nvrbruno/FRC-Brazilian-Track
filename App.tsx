@@ -1,20 +1,74 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+
+import { View, ActivityIndicator } from 'react-native';
+
+import LoginScreen from './src/screens/loginScreen';
+
+import HomeScreen from './src/screens/Home/homeScreen';
+
+import {
+  isAuthenticated,
+  getStoredUsername,
+  logout,
+} from './src/api/auth';
 
 export default function App() {
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+
+  const [username, setUsername] = useState<string>('');
+
+  useEffect(() => {
+    async function checkAuth() {
+      const result = await isAuthenticated();
+
+      if (result) {
+        const storedUsername = await getStoredUsername();
+
+        setUsername(storedUsername ?? '');
+      }
+
+      setAuthenticated(result);
+    }
+
+    checkAuth();
+  }, []);
+
+  async function handleLoginSuccess() {
+    const storedUsername = await getStoredUsername();
+
+    setUsername(storedUsername ?? '');
+
+    setAuthenticated(true);
+  }
+
+  async function handleLogout() {
+    await logout();
+
+    setAuthenticated(false);
+
+    setUsername('');
+  }
+
+  if (authenticated === null) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center' }}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
+  if (!authenticated) {
+    return (
+      <LoginScreen
+        onLoginSuccess={handleLoginSuccess}
+      />
+    );
+  }
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <HomeScreen
+      username={username}
+      onLogout={handleLogout}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
