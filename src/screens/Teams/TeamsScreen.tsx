@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -25,6 +25,8 @@ interface TeamsScreenProps {
   onOpenEvents: () => void; // navega para a tela de Eventos
 }
 
+const PAGE_SIZE = 10; // quantidade de equipes exibidas por página
+
 export default function TeamsScreen({
   onBack,
   onLogout,
@@ -35,6 +37,7 @@ export default function TeamsScreen({
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
+  const [page, setPage] = useState<number>(1); // página atual (1-indexed)
 
   // carrega as equipes do Brasil e seus avatares ao montar a tela
   useEffect(() => {
@@ -65,6 +68,28 @@ export default function TeamsScreen({
 
     carregarEquipes();
   }, []);
+
+  // total de páginas com base na quantidade de equipes carregadas
+  const totalPages = Math.max(1, Math.ceil(teams.length / PAGE_SIZE));
+
+  // sempre que a lista de equipes mudar, garante que a página atual seja válida
+  useEffect(() => {
+    setPage(1);
+  }, [teams.length]);
+
+  // fatia apenas as equipes da página atual
+  const pagedTeams = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return teams.slice(start, start + PAGE_SIZE);
+  }, [teams, page]);
+
+  function handlePrevPage() {
+    setPage((p) => Math.max(1, p - 1));
+  }
+
+  function handleNextPage() {
+    setPage((p) => Math.min(totalPages, p + 1));
+  }
 
   // fecha o menu e volta para a Home
   function handleOpenHome() {
@@ -145,7 +170,9 @@ export default function TeamsScreen({
 
         <View style={styles.center}>
           <Text style={styles.error}>{error}</Text>
-          <Button title="Voltar" onPress={onBack} />
+          <Pressable style={styles.primaryButton} onPress={onBack}>
+            <Text style={styles.primaryButtonText}>VOLTAR</Text>
+          </Pressable>
         </View>
 
         <Modal
@@ -180,10 +207,12 @@ export default function TeamsScreen({
       </View>
 
       {/* Contador de equipes, fora do header fixo, rola junto com a lista */}
-      <Text style={styles.count}>{teams.length} equipes encontradas</Text>
+      <Text style={styles.count}>
+        {teams.length} equipes encontradas — página {page} de {totalPages}
+      </Text>
 
       <FlatList
-        data={teams}
+        data={pagedTeams}
         keyExtractor={(item) => String(item.teamNumber)}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.list}
@@ -240,8 +269,35 @@ export default function TeamsScreen({
         )}
       />
 
+      {/* Controles de paginação, estilizados como o botão Voltar */}
+      <View style={styles.paginationRow}>
+        <Pressable
+          style={[
+            styles.paginationButton,
+            page === 1 && styles.paginationButtonDisabled,
+          ]}
+          onPress={handlePrevPage}
+          disabled={page === 1}
+        >
+          <Text style={styles.paginationButtonText}>◀ ANTERIOR</Text>
+        </Pressable>
+
+        <Pressable
+          style={[
+            styles.paginationButton,
+            page === totalPages && styles.paginationButtonDisabled,
+          ]}
+          onPress={handleNextPage}
+          disabled={page === totalPages}
+        >
+          <Text style={styles.paginationButtonText}>PRÓXIMA ▶</Text>
+        </Pressable>
+      </View>
+
       <View style={styles.backButton}>
-        <Button title="Voltar" onPress={onBack} />
+        <Pressable style={styles.primaryButton} onPress={onBack}>
+          <Text style={styles.primaryButtonText}>VOLTAR</Text>
+        </Pressable>
       </View>
 
       <Modal
@@ -383,6 +439,50 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#fff",
   },
+
+  // Botão padrão azul, mesma estilização do "VOLTAR" mostrado no app
+  primaryButton: {
+    backgroundColor: "#2196F3",
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  primaryButtonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "bold",
+    letterSpacing: 0.5,
+  },
+
+  // Linha com os dois botões de paginação (Anterior / Próxima)
+  paginationRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: 10,
+    paddingBottom: 5,
+    gap: 12,
+  },
+  paginationButton: {
+    flex: 1,
+    backgroundColor: "#2196F3",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  paginationButtonDisabled: {
+    backgroundColor: "#a9d4f7",
+  },
+  paginationButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold",
+    letterSpacing: 0.5,
+  },
+
   modalContainer: { flex: 1, flexDirection: "row" },
   sidebar: {
     width: 280,
