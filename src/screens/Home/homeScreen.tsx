@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Pressable,
   Modal,
+  Image,
 } from 'react-native';
 
 interface HomeScreenProps {
@@ -51,15 +52,40 @@ export default function HomeScreen({
         <Text style={styles.menuIcon}>☰</Text>
       </Pressable>
 
-      {/* mensagem de boas-vindas com o nome do usuário logado */}
+      {/* tela inicial: nome do app, descrição breve e acesso aos dados da API */}
       <View style={styles.content}>
-        <Text style={styles.title}>
-          Seja bem-vindo!
+        <Image
+          source={require('../../../assets/logoFrc.webp')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+
+        <Text style={styles.appName}>
+          FRC Brazilian Track
+        </Text>
+
+        <Text style={styles.description}>
+          Acompanhe as equipes e os eventos da FIRST Robotics Competition (FRC) no Brasil,
+          com dados obtidos diretamente da API oficial da FRC.
         </Text>
 
         <Text style={styles.username}>
-          {username}
+          Olá, {username}
         </Text>
+
+        <View style={styles.buttonsContainer}>
+          <Pressable style={styles.apiButton} onPress={handleOpenTeams}>
+            <Text style={styles.apiButtonText}>
+              Ver Times
+            </Text>
+          </Pressable>
+
+          <Pressable style={styles.apiButton} onPress={handleOpenEvents}>
+            <Text style={styles.apiButtonText}>
+              Ver Eventos
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* menu lateral (drawer) em modal deslizante */}
@@ -161,6 +187,27 @@ const styles = StyleSheet.create({
     padding: 24,
   },
 
+  logo: {
+    width: 120,
+    height: 120,
+    marginBottom: 16,
+  },
+
+  appName: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+
+  description: {
+    fontSize: 15,
+    color: '#555',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+
   title: {
     fontSize: 28,
     fontWeight: 'bold',
@@ -168,7 +215,26 @@ const styles = StyleSheet.create({
   },
 
   username: {
-    fontSize: 20,
+    fontSize: 18,
+    marginBottom: 24,
+  },
+
+  buttonsContainer: {
+    width: '100%',
+    gap: 12,
+  },
+
+  apiButton: {
+    backgroundColor: '#000',
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+
+  apiButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 
   modalContainer: {

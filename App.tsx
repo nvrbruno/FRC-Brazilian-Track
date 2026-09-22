@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
-import LoginScreen from "./src/screens/loginScreen";
+import LoginScreen from "./src/screens/Login/loginScreen";
 import HomeScreen from "./src/screens/Home/homeScreen";
 import TeamsScreen, { TeamWithAvatar } from "./src/screens/Teams/TeamsScreen";
 import TeamDetailsScreen from "./src/screens/Teams/TeamDetailsScreen";

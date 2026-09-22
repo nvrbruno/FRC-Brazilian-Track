@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 
-import { login } from '../api/auth';
+import { login } from '../../api/auth';
 
 interface LoginScreenProps {
   onLoginSuccess?: () => void;
